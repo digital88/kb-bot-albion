@@ -12,6 +12,7 @@
   "devDependencies": {
     "@types/node": "^10.9.4",
     "@types/winston": "^2.4.4",
+    "source-map-loader": "^0.2.4",
     "ts-loader": "^5.0.0",
     "typescript": "^3.0.3",
     "webpack": "^4.17.2",
