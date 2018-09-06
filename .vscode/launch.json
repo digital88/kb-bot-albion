@@ -8,7 +8,9 @@
             "type": "node",
             "request": "launch",
             "name": "Запустить программу",
-            "program": "${workspaceFolder}\\index.js",
+            "program": "${workspaceFolder}/dist/bundle.js",
+            "sourceMaps": true,
+            "console": "integratedTerminal",
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
             ]

@@ -1,15 +1,7 @@
 import * as Discord from 'discord.io'
-import * as winston from 'winston'
 import { auth } from './auth'
-
-// Configure logger settings
-let logger = winston.createLogger({
-    level: 'debug',
-    transports: new winston.transports.Console({
-        level: 'debug',
-        handleExceptions: true,
-    })
-})
+import { logger } from './log/logger'
+import { fetchBattlesInfo } from './api/albion'
 
 // Initialize Discord Bot
 let bot = new Discord.Client({
@@ -20,6 +12,8 @@ bot.on('ready', function (evt) {
     logger.info('Connected')
     logger.info('Logged in as: ')
     logger.info(bot.username + ' - (' + bot.id + ')')
+
+    fetchBattlesInfo()
 })
 bot.on('message', function (user, userID, channelID, message, evt) {
     // Our bot needs to know if it will execute a command
