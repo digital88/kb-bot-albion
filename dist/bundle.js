@@ -100,23 +100,34 @@ var logger_1 = __webpack_require__(/*! ../log/logger */ "./log/logger.ts");
 var xhr = __webpack_require__(/*! xmlhttprequest */ "./node_modules/xmlhttprequest/lib/XMLHttpRequest.js");
 var apiUrl = 'https://gameinfo.albiononline.com/api/gameinfo/';
 var endpoints = {
-    battles: 'battles'
+    battles: 'battles',
+    events: 'events',
+    eventById: function (eventId) { return "events/" + eventId; }
 };
-function fetchInfo() {
+function fetchInfo(endpoint) {
     var req = new xhr.XMLHttpRequest();
     req.onreadystatechange = function (ev) {
         logger_1.logger.info("State: " + this.readyState);
         if (this.readyState === 4) {
             var obj = JSON.parse(this.responseText);
-            logger_1.logger.info(obj);
-            logger_1.logger.info("Complete.\nBody length: " + this.responseText.length);
-            logger_1.logger.info("Body:\n" + this.responseText);
+            logger_1.logger.info('fetched data from ep: ' + endpoint);
         }
     };
-    req.open('GET', apiUrl + endpoints.battles);
+    req.open('GET', apiUrl + endpoint);
     req.send();
 }
-exports.fetchInfo = fetchInfo;
+function fetchBattles() {
+    fetchInfo(endpoints.battles);
+}
+exports.fetchBattles = fetchBattles;
+function fetchEvents() {
+    fetchInfo(endpoints.events);
+}
+exports.fetchEvents = fetchEvents;
+function fetchEvent(eventId) {
+    fetchInfo(endpoints.eventById(eventId));
+}
+exports.fetchEvent = fetchEvent;
 
 
 /***/ }),
@@ -132,7 +143,7 @@ exports.fetchInfo = fetchInfo;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.auth = {
-    "token": "NDg3MDAxNTgzMjUxNDg4NzY5.DnHUMA.otqybUNaYlu5ylzR3T5eKScMWuk"
+    "token": "NDg3MDAxNTgzMjUxNDg4NzY5.DnMahw.dQzHND8AnDBcuFz1wsASep4_wLc"
 };
 
 
@@ -161,7 +172,9 @@ bot.on('ready', function (evt) {
     logger_1.logger.info('Connected');
     logger_1.logger.info('Logged in as: ');
     logger_1.logger.info(bot.username + ' - (' + bot.id + ')');
-    albion_1.fetchInfo();
+    albion_1.fetchEvents();
+    albion_1.fetchEvent(21380570);
+    albion_1.fetchBattles();
 });
 bot.on('message', function (user, userID, channelID, message, evt) {
     // Our bot needs to know if it will execute a command

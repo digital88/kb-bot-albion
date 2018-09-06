@@ -1,7 +1,7 @@
 import * as Discord from 'discord.io'
 import { auth } from './auth'
 import { logger } from './log/logger'
-import { fetchBattlesInfo } from './api/albion'
+import { fetchBattles, fetchEvents, fetchEvent } from './api/albion'
 
 // Initialize Discord Bot
 let bot = new Discord.Client({
@@ -13,7 +13,9 @@ bot.on('ready', function (evt) {
     logger.info('Logged in as: ')
     logger.info(bot.username + ' - (' + bot.id + ')')
 
-    fetchBattlesInfo()
+    fetchEvents()
+    fetchEvent(21380570)
+    fetchBattles()
 })
 bot.on('message', function (user, userID, channelID, message, evt) {
     // Our bot needs to know if it will execute a command
