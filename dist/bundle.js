@@ -183,16 +183,16 @@ function fetchEvent(eventId) {
 exports.fetchEvent = fetchEvent;
 function fetchUpcomingGvGs(limit, offset) {
     let params = {
-        limit: limit ? limit : 1,
-        offset: offset
+        limit: limit,
+        offset: offset,
     };
     return fetchInfo(endpoints.upcomingGvGs(), params);
 }
 exports.fetchUpcomingGvGs = fetchUpcomingGvGs;
 function fetchPrevGvGs(guildId, limit, offset) {
     let params = {
-        limit: limit ? limit : 1,
-        offset: offset ? offset : 0
+        limit: limit,
+        offset: offset,
     };
     return fetchInfo(endpoints.guildGvGs(guildId), params);
 }
@@ -211,9 +211,24 @@ exports.fetchPrevGvGs = fetchPrevGvGs;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.auth = {
-    "token": "NDg3MDAxNTgzMjUxNDg4NzY5.DnMahw.dQzHND8AnDBcuFz1wsASep4_wLc"
-};
+const fs = __webpack_require__(/*! fs */ "fs");
+const logger_1 = __webpack_require__(/*! ./log/logger */ "./log/logger.ts");
+/** Reads file named 'token' in current folder and extracts it's contents as string.
+*   File must be ANSI encoded or bot will not connect with resulting string as token.
+*   This maybe is related to how node works with strings and encodings.
+*   Returns empty string on error.
+*/
+function readToken() {
+    try {
+        let buf = fs.readFileSync('token');
+        return buf.toString();
+    }
+    catch (err) {
+        logger_1.logger.info(err);
+        return '';
+    }
+}
+exports.readToken = readToken;
 
 
 /***/ }),
@@ -247,41 +262,44 @@ exports.ALL_GUILDS = 'all';
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(__filename) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Discord = __webpack_require__(/*! discord.io */ "./node_modules/discord.io/lib/index.js");
 const auth_1 = __webpack_require__(/*! ./auth */ "./auth.ts");
 const logger_1 = __webpack_require__(/*! ./log/logger */ "./log/logger.ts");
 const commands_1 = __webpack_require__(/*! ./middleware/commands */ "./middleware/commands.ts");
-// Initialize Discord Bot
-let bot = new Discord.Client({
-    token: auth_1.auth.token,
-    autorun: true
-});
-bot.on('ready', function (evt) {
-    logger_1.logger.info('Connected');
-    logger_1.logger.info('Logged in as: ');
-    logger_1.logger.info(bot.username + ' - (' + bot.id + ')');
-    logger_1.logger.info('TZ offset is: ' + new Date().getTimezoneOffset());
-});
-bot.on('message', function (user, userID, channelID, message, evt) {
-    // Our bot needs to know if it will execute a command
-    // It will listen for messages that will start with `!`
-    if (message.substring(0, 1) == '!') {
-        let args = message.substring(1).split(' ');
-        let cmd = args[0];
-        args = args.splice(1);
-        if (commands_1.isKnownCommand(cmd))
-            bot.simulateTyping(channelID);
-        commands_1.processCommand(cmd, function (message) {
-            bot.sendMessage({
-                to: channelID,
-                message: message
-            });
-        }, ...args);
-    }
-});
+const path = __webpack_require__(/*! path */ "path");
+logger_1.logger.info('Current dir: ' + path.dirname(__filename));
+logger_1.logger.info('TZ offset is: ' + new Date().getTimezoneOffset());
+let token = auth_1.readToken();
+if (token) {
+    logger_1.logger.info('Got token from file');
+    let bot = new Discord.Client({
+        token: token,
+        autorun: true
+    });
+    bot.on('ready', function (evt) {
+        logger_1.logger.info('Connected');
+        logger_1.logger.info('Logged in as: ' + bot.username + ' - (' + bot.id + ')');
+    });
+    bot.on('message', function (user, userID, channelID, message, evt) {
+        if (message.substring(0, 1) == '!') {
+            let args = message.substring(1).split(' ');
+            let cmd = args[0];
+            args = args.splice(1);
+            if (commands_1.isKnownCommand(cmd))
+                bot.simulateTyping(channelID);
+            commands_1.processCommand(cmd, function (message) {
+                bot.sendMessage({
+                    to: channelID,
+                    message: message
+                });
+            }, ...args);
+        }
+    });
+}
 
+/* WEBPACK VAR INJECTION */}.call(this, "/index.js"))
 
 /***/ }),
 
@@ -357,24 +375,11 @@ function processGvg(callback, ...args) {
             guildId = config_1.guilds[args[0]];
         }
     }
-    /*if (args.length == 2) {
-        if (args[0].toLowerCase() == ALL_GUILDS)
-            guildId = ALL_GUILDS
-        else if (Object.keys(guilds).indexOf(args[0].toLowerCase()) >= 0) {
-            guildId = guilds[args[0]]
-        }
-        limit = Number(args[1])
-    }*/
     let hasMore = true;
     let results = [];
     let processCallback = function (data) {
         hasMore = data.length >= limit;
         offset += limit;
-        let dateFormatOpts = {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        };
         let cnt = results.length + 1;
         for (let i = 0; i < data.length; i++) {
             if (guildId != config_1.ALL_GUILDS)
@@ -385,32 +390,35 @@ function processGvg(callback, ...args) {
             dateOfGvg.setMinutes(dateOfGvg.getMinutes() + (-dateDiff));
             let today = new Date();
             today.setMinutes(today.getMinutes() + (-dateDiff));
-            let h = dateOfGvg.getHours().toString();
-            let m = dateOfGvg.getMinutes().toString();
-            let atTime = (h.length == 1 ? '0' + h : h) + ':' + (m.length == 1 ? '0' + m : m);
+            let { atTime, atDate } = toDateAndTimeStr(dateOfGvg);
             let attakerAllianceTag = data[i].Attacker.Alliance ? `[${(data[i].Attacker.Alliance.AllianceTag || data[i].Attacker.Alliance.AllianceName)}]` : '';
             let defenderAllianceTag = data[i].Defender.Alliance ? `[${(data[i].Defender.Alliance.AllianceTag || data[i].Defender.Alliance.AllianceName)}]` : '';
             let attaker = `${attakerAllianceTag}${data[i].Attacker.Name}`;
             let defender = `${defenderAllianceTag}${data[i].Defender.Name}`;
             if (dateOfGvg.getDate() == today.getDate())
-                results.push(cnt++ + `. Today at ${atTime}    ${attaker} vs ${defender}    ${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}` + '\r\n');
+                results.push(cnt++ + `. Today at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n');
             else
-                results.push(cnt++ + `. ${dateOfGvg.toLocaleDateString('ru-RU', dateFormatOpts)} at ${atTime}    ${attaker} vs ${defender}    ${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}` + '\r\n');
+                results.push(cnt++ + `. ${atDate} at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n');
         }
         if (hasMore)
-            cycle();
-        else
-            endCycle();
+            albion_1.fetchUpcomingGvGs(limit, offset).then((data) => processCallback(data));
+        else {
+            if (results.length == 0)
+                results.push('No upcoming GvG.');
+            callback(results.join(''));
+        }
     };
-    let cycle = function () {
-        albion_1.fetchUpcomingGvGs(limit, offset).then((data) => processCallback(data));
-    };
-    let endCycle = function () {
-        if (results.length == 0)
-            results.push('No upcoming GvG.');
-        callback(results.join(''));
-    };
-    cycle();
+    albion_1.fetchUpcomingGvGs(limit, offset).then((data) => processCallback(data));
+}
+function toDateAndTimeStr(dateOfGvg) {
+    let h = dateOfGvg.getHours().toString();
+    let m = dateOfGvg.getMinutes().toString();
+    let d = dateOfGvg.getDate().toString();
+    let mn = (dateOfGvg.getMonth() + 1).toString();
+    let y = dateOfGvg.getFullYear().toString();
+    let atDate = (d.length == 1 ? '0' + d : d) + '/' + (mn.length == 1 ? '0' + mn : mn) + '/' + (y.length == 1 ? '0' + y : y);
+    let atTime = (h.length == 1 ? '0' + h : h) + ':' + (m.length == 1 ? '0' + m : m);
+    return { atTime, atDate };
 }
 function processPing(callback) {
     callback('Pong!');

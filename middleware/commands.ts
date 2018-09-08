@@ -1,6 +1,5 @@
 
 import { fetchBattles, fetchEvents, fetchEvent, fetchUpcomingGvGs } from '../api/albion'
-import config from '../config'
 import { guilds, ALL_GUILDS } from '../config'
 import * as gvg from '../interface/gvgs'
 
@@ -41,24 +40,11 @@ function processGvg(callback: (msg: string) => void, ...args: string[]) {
             guildId = guilds[args[0]]
         }
     }
-    /*if (args.length == 2) {
-        if (args[0].toLowerCase() == ALL_GUILDS)
-            guildId = ALL_GUILDS
-        else if (Object.keys(guilds).indexOf(args[0].toLowerCase()) >= 0) {
-            guildId = guilds[args[0]]
-        }
-        limit = Number(args[1])
-    }*/
     let hasMore = true
     let results: string[] = []
     let processCallback = function (data: gvg.IGvGsInfo) {
         hasMore = data.length >= limit
         offset += limit
-        let dateFormatOpts: Intl.DateTimeFormatOptions = {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        }
         let cnt = results.length + 1
         for (let i = 0; i < data.length; i++) {
             if (guildId != ALL_GUILDS)
@@ -69,32 +55,36 @@ function processGvg(callback: (msg: string) => void, ...args: string[]) {
             dateOfGvg.setMinutes(dateOfGvg.getMinutes() + (-dateDiff))
             let today = new Date()
             today.setMinutes(today.getMinutes() + (-dateDiff))
-            let h = dateOfGvg.getHours().toString()
-            let m = dateOfGvg.getMinutes().toString()
-            let atTime = (h.length == 1 ? '0' + h : h) + ':' + (m.length == 1 ? '0' + m : m)
+            let { atTime, atDate } = toDateAndTimeStr(dateOfGvg)
             let attakerAllianceTag = data[i].Attacker.Alliance ? `[${(data[i].Attacker.Alliance.AllianceTag || data[i].Attacker.Alliance.AllianceName)}]` : ''
             let defenderAllianceTag = data[i].Defender.Alliance ? `[${(data[i].Defender.Alliance.AllianceTag || data[i].Defender.Alliance.AllianceName)}]` : ''
             let attaker = `${attakerAllianceTag}${data[i].Attacker.Name}`
             let defender = `${defenderAllianceTag}${data[i].Defender.Name}`
             if (dateOfGvg.getDate() == today.getDate())
-                results.push(cnt++ + `. Today at ${atTime}    ${attaker} vs ${defender}    ${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}` + '\r\n')
+                results.push(cnt++ + `. Today at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n')
             else
-                results.push(cnt++ + `. ${dateOfGvg.toLocaleDateString('ru-RU', dateFormatOpts)} at ${atTime}    ${attaker} vs ${defender}    ${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}` + '\r\n')
+                results.push(cnt++ + `. ${atDate} at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n')
         }
         if (hasMore)
-            cycle()
-        else
-            endCycle()
+            fetchUpcomingGvGs(limit, offset).then((data: gvg.IGvGsInfo) => processCallback(data))
+        else {
+            if (results.length == 0)
+                results.push('No upcoming GvG.')
+            callback(results.join(''))
+        }
     }
-    let cycle = function () {
-        fetchUpcomingGvGs(limit, offset).then((data: gvg.IGvGsInfo) => processCallback(data))
-    }
-    let endCycle = function () {
-        if (results.length == 0)
-            results.push('No upcoming GvG.')
-        callback(results.join(''))
-    }
-    cycle()
+    fetchUpcomingGvGs(limit, offset).then((data: gvg.IGvGsInfo) => processCallback(data))
+}
+
+function toDateAndTimeStr(dateOfGvg: Date) {
+    let h = dateOfGvg.getHours().toString()
+    let m = dateOfGvg.getMinutes().toString()
+    let d = dateOfGvg.getDate().toString()
+    let mn = (dateOfGvg.getMonth() + 1).toString()
+    let y = dateOfGvg.getFullYear().toString()
+    let atDate = (d.length == 1 ? '0' + d : d) + '/' + (mn.length == 1 ? '0' + mn : mn) + '/' + (y.length == 1 ? '0' + y : y)
+    let atTime = (h.length == 1 ? '0' + h : h) + ':' + (m.length == 1 ? '0' + m : m)
+    return { atTime, atDate }
 }
 
 function processPing(callback: (msg: string) => void) {

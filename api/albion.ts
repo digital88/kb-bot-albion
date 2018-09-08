@@ -103,18 +103,18 @@ export function fetchEvent(eventId: entityId) {
     fetchInfo(endpoints.eventById(eventId))
 }
 
-export function fetchUpcomingGvGs(limit?: number, offset?: number) {
+export function fetchUpcomingGvGs(limit: number, offset: number) {
     let params: IQueryParams = {
-        limit: limit ? limit : 1,
-        offset: offset
+        limit: limit,
+        offset: offset,
     }
     return fetchInfo(endpoints.upcomingGvGs(), params)
 }
 
-export function fetchPrevGvGs(guildId: entityId, limit?: number, offset?: number) {
+export function fetchPrevGvGs(guildId: entityId, limit: number, offset: number) {
     let params: IQueryParams = {
-        limit: limit ? limit : 1,
-        offset: offset ? offset : 0
+        limit: limit,
+        offset: offset,
     }
     return fetchInfo(endpoints.guildGvGs(guildId), params)
 }
