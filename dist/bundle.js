@@ -262,6 +262,7 @@ bot.on('ready', function (evt) {
     logger_1.logger.info('Connected');
     logger_1.logger.info('Logged in as: ');
     logger_1.logger.info(bot.username + ' - (' + bot.id + ')');
+    logger_1.logger.info('TZ offset is: ' + new Date().getTimezoneOffset());
 });
 bot.on('message', function (user, userID, channelID, message, evt) {
     // Our bot needs to know if it will execute a command
@@ -298,9 +299,11 @@ const winston = __webpack_require__(/*! winston */ "./node_modules/winston/lib/w
 // Configure logger settings
 exports.logger = winston.createLogger({
     level: 'debug',
+    format: winston.format.simple(),
     transports: new winston.transports.Console({
         level: 'debug',
         handleExceptions: true,
+        format: winston.format.simple()
     })
 });
 
@@ -319,6 +322,8 @@ exports.logger = winston.createLogger({
 Object.defineProperty(exports, "__esModule", { value: true });
 const albion_1 = __webpack_require__(/*! ../api/albion */ "./api/albion.ts");
 const config_1 = __webpack_require__(/*! ../config */ "./config.ts");
+const currUtcOffset = new Date().getTimezoneOffset();
+const targetUtcOffset = -180; // +03:00 Moscow time
 const knownCommands = [
     'ping',
     'gvg',
@@ -375,9 +380,11 @@ function processGvg(callback, ...args) {
             if (guildId != config_1.ALL_GUILDS)
                 if (data[i].Attacker.Id != guildId && data[i].Defender.Id != guildId)
                     continue;
+            let dateDiff = targetUtcOffset - currUtcOffset;
             let dateOfGvg = new Date(Date.parse(data[i].StartTime));
-            //dateOfGvg.setHours(localUtcOffset + dateOfGvg.getHours())
+            dateOfGvg.setMinutes(dateOfGvg.getMinutes() + (-dateDiff));
             let today = new Date();
+            today.setMinutes(today.getMinutes() + (-dateDiff));
             let h = dateOfGvg.getHours().toString();
             let m = dateOfGvg.getMinutes().toString();
             let atTime = (h.length == 1 ? '0' + h : h) + ':' + (m.length == 1 ? '0' + m : m);

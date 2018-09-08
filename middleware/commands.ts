@@ -4,6 +4,9 @@ import config from '../config'
 import { guilds, ALL_GUILDS } from '../config'
 import * as gvg from '../interface/gvgs'
 
+const currUtcOffset = new Date().getTimezoneOffset()
+const targetUtcOffset = -180 // +03:00 Moscow time
+
 const knownCommands = [
     'ping',
     'gvg',
@@ -61,9 +64,11 @@ function processGvg(callback: (msg: string) => void, ...args: string[]) {
             if (guildId != ALL_GUILDS)
                 if (data[i].Attacker.Id != guildId && data[i].Defender.Id != guildId)
                     continue
+            let dateDiff = targetUtcOffset - currUtcOffset
             let dateOfGvg = new Date(Date.parse(data[i].StartTime))
-            //dateOfGvg.setHours(localUtcOffset + dateOfGvg.getHours())
+            dateOfGvg.setMinutes(dateOfGvg.getMinutes() + (-dateDiff))
             let today = new Date()
+            today.setMinutes(today.getMinutes() + (-dateDiff))
             let h = dateOfGvg.getHours().toString()
             let m = dateOfGvg.getMinutes().toString()
             let atTime = (h.length == 1 ? '0' + h : h) + ':' + (m.length == 1 ? '0' + m : m)
