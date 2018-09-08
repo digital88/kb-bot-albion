@@ -319,7 +319,6 @@ exports.logger = winston.createLogger({
 Object.defineProperty(exports, "__esModule", { value: true });
 const albion_1 = __webpack_require__(/*! ../api/albion */ "./api/albion.ts");
 const config_1 = __webpack_require__(/*! ../config */ "./config.ts");
-const config_2 = __webpack_require__(/*! ../config */ "./config.ts");
 const knownCommands = [
     'ping',
     'gvg',
@@ -345,22 +344,22 @@ exports.processCommand = processCommand;
 function processGvg(callback, ...args) {
     let limit = 10;
     let offset = 0;
-    let guildId = config_1.default.guildId;
-    if (args.length == 1) {
-        if (args[0].toLowerCase() == config_2.ALL_GUILDS)
-            guildId = config_2.ALL_GUILDS;
-        else if (Object.keys(config_2.guilds).indexOf(args[0].toLowerCase()) >= 0) {
-            guildId = config_2.guilds[args[0]];
+    let guildId = config_1.ALL_GUILDS;
+    if (args.length >= 1) {
+        if (args[0].toLowerCase() == config_1.ALL_GUILDS)
+            guildId = config_1.ALL_GUILDS;
+        else if (Object.keys(config_1.guilds).indexOf(args[0].toLowerCase()) >= 0) {
+            guildId = config_1.guilds[args[0]];
         }
     }
-    if (args.length == 2) {
-        if (args[0].toLowerCase() == config_2.ALL_GUILDS)
-            guildId = config_2.ALL_GUILDS;
-        else if (Object.keys(config_2.guilds).indexOf(args[0].toLowerCase()) >= 0) {
-            guildId = config_2.guilds[args[0]];
+    /*if (args.length == 2) {
+        if (args[0].toLowerCase() == ALL_GUILDS)
+            guildId = ALL_GUILDS
+        else if (Object.keys(guilds).indexOf(args[0].toLowerCase()) >= 0) {
+            guildId = guilds[args[0]]
         }
-        limit = Number(args[1]);
-    }
+        limit = Number(args[1])
+    }*/
     let hasMore = true;
     let results = [];
     let processCallback = function (data) {
@@ -373,7 +372,7 @@ function processGvg(callback, ...args) {
         };
         let cnt = results.length + 1;
         for (let i = 0; i < data.length; i++) {
-            if (guildId != config_2.ALL_GUILDS)
+            if (guildId != config_1.ALL_GUILDS)
                 if (data[i].Attacker.Id != guildId && data[i].Defender.Id != guildId)
                     continue;
             let dateOfGvg = new Date(Date.parse(data[i].StartTime));

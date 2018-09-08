@@ -30,22 +30,22 @@ export function processCommand(command: string, callback: (msg: string) => void,
 function processGvg(callback: (msg: string) => void, ...args: string[]) {
     let limit = 10
     let offset = 0
-    let guildId = config.guildId
-    if (args.length == 1) {
+    let guildId = ALL_GUILDS
+    if (args.length >= 1) {
         if (args[0].toLowerCase() == ALL_GUILDS)
             guildId = ALL_GUILDS
         else if (Object.keys(guilds).indexOf(args[0].toLowerCase()) >= 0) {
             guildId = guilds[args[0]]
         }
     }
-    if (args.length == 2) {
+    /*if (args.length == 2) {
         if (args[0].toLowerCase() == ALL_GUILDS)
             guildId = ALL_GUILDS
         else if (Object.keys(guilds).indexOf(args[0].toLowerCase()) >= 0) {
             guildId = guilds[args[0]]
         }
         limit = Number(args[1])
-    }
+    }*/
     let hasMore = true
     let results: string[] = []
     let processCallback = function (data: gvg.IGvGsInfo) {
