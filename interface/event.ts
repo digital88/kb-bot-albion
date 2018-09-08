@@ -1,3 +1,26 @@
+interface IGuildFameEventInfo {
+    Id: string,
+    Name: string,
+    AllianceId: string,
+    AllianceName: string,
+    KillFame: number,
+    DeathFame: number
+}
+
+interface IPlayerWeaponRankInfo {
+    Id: string,
+    PlayerName: string,
+    PlayerId: string,
+    WeaponCategoryId: string,
+    WeaponCategoryName: string,
+    AllianceId: string,
+    AllianceName: string,
+    AllianceTag: string,
+    GuildId: string,
+    GuildName: string,
+    Fame: number
+}
+
 interface IEventInfo {
     BattleId: number,
     EventId: number,
