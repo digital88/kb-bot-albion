@@ -387,9 +387,9 @@ function processGvg(callback, ...args) {
             let attaker = `${attakerAllianceTag}${data[i].Attacker.Name}`;
             let defender = `${defenderAllianceTag}${data[i].Defender.Name}`;
             if (dateOfGvg.getDate() == today.getDate())
-                results.push(cnt++ + `. Today at ${atTime}    ${attaker} vs ${defender}` + '\r\n');
+                results.push(cnt++ + `. Today at ${atTime}    ${attaker} vs ${defender}    ${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}` + '\r\n');
             else
-                results.push(cnt++ + `. ${dateOfGvg.toLocaleDateString('ru-RU', dateFormatOpts)} at ${atTime}    ${attaker} vs ${defender}` + '\r\n');
+                results.push(cnt++ + `. ${dateOfGvg.toLocaleDateString('ru-RU', dateFormatOpts)} at ${atTime}    ${attaker} vs ${defender}    ${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}` + '\r\n');
         }
         if (hasMore)
             cycle();
