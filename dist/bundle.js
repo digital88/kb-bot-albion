@@ -96,38 +96,107 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = __webpack_require__(/*! ../log/logger */ "./log/logger.ts");
-var xhr = __webpack_require__(/*! xmlhttprequest */ "./node_modules/xmlhttprequest/lib/XMLHttpRequest.js");
-var apiUrl = 'https://gameinfo.albiononline.com/api/gameinfo/';
-var endpoints = {
-    battles: 'battles',
-    events: 'events',
-    eventById: function (eventId) { return "events/" + eventId; }
+const logger_1 = __webpack_require__(/*! ../log/logger */ "./log/logger.ts");
+const xhr = __webpack_require__(/*! xmlhttprequest */ "./node_modules/xmlhttprequest/lib/XMLHttpRequest.js");
+const apiUrl = 'https://gameinfo.albiononline.com/api/gameinfo';
+const endpoints = {
+    searchQuery: (query) => `/search?q=${query}`,
+    battles: () => '/battles',
+    battleById: (battleId) => `/battles/${battleId}`,
+    events: () => '/events',
+    eventsBattles: (battleId) => `events/battle/${battleId}`,
+    eventById: (eventId) => `/events/${eventId}`,
+    eventsHistory: (eventId1, eventId2) => `/events/${eventId1}/history/${eventId2}`,
+    guild: (guildId) => `/guilds/${guildId}`,
+    guildTopKills: (guildId) => `/guilds/${guildId}/top`,
+    guildTopAssists: (guildId) => `/guilds/${guildId}/topassists`,
+    guildGvGStats: (guildId) => `/guilds/${guildId}/stats`,
+    guildMembers: (guildId) => `/guilds/${guildId}/members`,
+    guildData: (guildId) => `/guilds/${guildId}/data`,
+    guildFeud: (guildId1, guildId2) => `/guilds/${guildId1}/feud/${guildId2}`,
+    playerRankings: () => '/players/statistics',
+    topPlayersFame: () => '/players/fameratio',
+    playerById: (playerId) => `/players/${playerId}`,
+    playerTopKills: (playerId) => `/players/${playerId}/topkills`,
+    playerTopAssists: (playerId) => `/players/${playerId}/topassists`,
+    playerSoloKills: (playerId) => `/players/${playerId}/solokills`,
+    playerDeaths: (playerId) => `/players/${playerId}/deaths`,
+    topGuildsByAttacks: () => '/guilds/topguildsbyattacks',
+    topGuildsByDefenses: () => '/guilds/topguildsbydefenses',
+    topGuildsByFame: () => '/events/guildfame',
+    topKillsByFame: () => '/events/killfame',
+    topPlayersByFame: () => '/events/playerfame',
+    upcomingGvGs: () => '/guildmatches/next',
+    prevGvGs: () => '/guildmatches/past',
+    GvG_ById: (matchId) => `/guildmatches/${matchId}`,
+    guildGvGs: (guildId) => `/guildmatches/guild/${guildId}`,
+    GvG_History: (guildId1, guildId2) => `/guildmatches/history/${guildId1}/${guildId2}`,
+    topGvgs: () => '/guildmatches/top',
+    weaponCategories: () => '/items/_weaponCategories',
+    allianceById: (allianceId) => `/alliances/${allianceId}`,
+    allianceTopKills: (allianceId) => `/alliances/${allianceId}/topKills`,
 };
-function fetchInfo(endpoint) {
-    var req = new xhr.XMLHttpRequest();
-    req.onreadystatechange = function (ev) {
-        logger_1.logger.info("State: " + this.readyState);
-        if (this.readyState === 4) {
-            var obj = JSON.parse(this.responseText);
-            logger_1.logger.info('fetched data from ep: ' + endpoint);
+function buildQueryString(endpoint, params) {
+    let result = apiUrl + endpoint;
+    if (params) {
+        let append = '?';
+        let args = [];
+        let keys = Object.keys(params);
+        keys.forEach((key) => {
+            if (params[key])
+                args.push(`${key}=${params[key]}`);
+        });
+        if (args.length > 0) {
+            append += args.join('&');
+            result += append;
         }
-    };
-    req.open('GET', apiUrl + endpoint);
-    req.send();
+    }
+    return result;
+}
+function fetchInfo(endpoint, params) {
+    return new Promise(function (resolve, reject) {
+        let req = new xhr.XMLHttpRequest();
+        req.onreadystatechange = function () {
+            logger_1.logger.info("State: " + this.readyState);
+            if (this.readyState === this.DONE) {
+                logger_1.logger.info('fetched data from ep: ' + endpoint);
+                let obj = JSON.parse(this.responseText);
+                resolve(obj);
+            }
+        };
+        let url = buildQueryString(endpoint, params);
+        req.open('GET', url);
+        req.send();
+    });
 }
 function fetchBattles() {
-    fetchInfo(endpoints.battles);
+    fetchInfo(endpoints.battles());
 }
 exports.fetchBattles = fetchBattles;
 function fetchEvents() {
-    fetchInfo(endpoints.events);
+    fetchInfo(endpoints.events());
 }
 exports.fetchEvents = fetchEvents;
 function fetchEvent(eventId) {
     fetchInfo(endpoints.eventById(eventId));
 }
 exports.fetchEvent = fetchEvent;
+function fetchUpcomingGvGs(limit, offset) {
+    let params = {
+        limit: limit ? limit : 1,
+        offset: offset
+    };
+    return fetchInfo(endpoints.upcomingGvGs(), params);
+}
+exports.fetchUpcomingGvGs = fetchUpcomingGvGs;
+function fetchPrevGvGs(guildId, limit, offset) {
+    let params = {
+        limit: limit ? limit : 1,
+        offset: offset ? offset : 0
+    };
+    return fetchInfo(endpoints.guildGvGs(guildId), params);
+}
+exports.fetchPrevGvGs = fetchPrevGvGs;
 
 
 /***/ }),
@@ -149,6 +218,27 @@ exports.auth = {
 
 /***/ }),
 
+/***/ "./config.ts":
+/*!*******************!*\
+  !*** ./config.ts ***!
+  \*******************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = {
+    guildId: 'z3Ftrp5mTXynekPRELtTjg' // Gypsies
+};
+exports.guilds = {
+    sun: 'jZrWFzPxQwqUeAGkFtOUmw'
+};
+exports.ALL_GUILDS = 'all';
+
+
+/***/ }),
+
 /***/ "./index.ts":
 /*!******************!*\
   !*** ./index.ts ***!
@@ -159,12 +249,12 @@ exports.auth = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Discord = __webpack_require__(/*! discord.io */ "./node_modules/discord.io/lib/index.js");
-var auth_1 = __webpack_require__(/*! ./auth */ "./auth.ts");
-var logger_1 = __webpack_require__(/*! ./log/logger */ "./log/logger.ts");
-var albion_1 = __webpack_require__(/*! ./api/albion */ "./api/albion.ts");
+const Discord = __webpack_require__(/*! discord.io */ "./node_modules/discord.io/lib/index.js");
+const auth_1 = __webpack_require__(/*! ./auth */ "./auth.ts");
+const logger_1 = __webpack_require__(/*! ./log/logger */ "./log/logger.ts");
+const commands_1 = __webpack_require__(/*! ./middleware/commands */ "./middleware/commands.ts");
 // Initialize Discord Bot
-var bot = new Discord.Client({
+let bot = new Discord.Client({
     token: auth_1.auth.token,
     autorun: true
 });
@@ -172,27 +262,22 @@ bot.on('ready', function (evt) {
     logger_1.logger.info('Connected');
     logger_1.logger.info('Logged in as: ');
     logger_1.logger.info(bot.username + ' - (' + bot.id + ')');
-    albion_1.fetchEvents();
-    albion_1.fetchEvent(21380570);
-    albion_1.fetchBattles();
 });
 bot.on('message', function (user, userID, channelID, message, evt) {
     // Our bot needs to know if it will execute a command
     // It will listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
-        var args = message.substring(1).split(' ');
-        var cmd = args[0];
+        let args = message.substring(1).split(' ');
+        let cmd = args[0];
         args = args.splice(1);
-        switch (cmd) {
-            // !ping
-            case 'ping':
-                bot.sendMessage({
-                    to: channelID,
-                    message: 'Pong!'
-                });
-                break;
-            // Just add any case commands if you want to..
-        }
+        if (commands_1.isKnownCommand(cmd))
+            bot.simulateTyping(channelID);
+        commands_1.processCommand(cmd, function (message) {
+            bot.sendMessage({
+                to: channelID,
+                message: message
+            });
+        }, ...args);
     }
 });
 
@@ -209,7 +294,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var winston = __webpack_require__(/*! winston */ "./node_modules/winston/lib/winston.js");
+const winston = __webpack_require__(/*! winston */ "./node_modules/winston/lib/winston.js");
 // Configure logger settings
 exports.logger = winston.createLogger({
     level: 'debug',
@@ -218,6 +303,112 @@ exports.logger = winston.createLogger({
         handleExceptions: true,
     })
 });
+
+
+/***/ }),
+
+/***/ "./middleware/commands.ts":
+/*!********************************!*\
+  !*** ./middleware/commands.ts ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const albion_1 = __webpack_require__(/*! ../api/albion */ "./api/albion.ts");
+const config_1 = __webpack_require__(/*! ../config */ "./config.ts");
+const config_2 = __webpack_require__(/*! ../config */ "./config.ts");
+const knownCommands = [
+    'ping',
+    'gvg',
+];
+function isKnownCommand(command) {
+    return knownCommands.indexOf(command) >= 0;
+}
+exports.isKnownCommand = isKnownCommand;
+function processCommand(command, callback, ...args) {
+    switch (command) {
+        case 'ping': {
+            processPing(callback);
+            break;
+        }
+        case 'gvg': {
+            processGvg(callback, ...args);
+            break;
+        }
+        default: break;
+    }
+}
+exports.processCommand = processCommand;
+function processGvg(callback, ...args) {
+    let limit = 10;
+    let offset = 0;
+    let guildId = config_1.default.guildId;
+    if (args.length == 1) {
+        if (args[0].toLowerCase() == config_2.ALL_GUILDS)
+            guildId = config_2.ALL_GUILDS;
+        else if (Object.keys(config_2.guilds).indexOf(args[0].toLowerCase()) >= 0) {
+            guildId = config_2.guilds[args[0]];
+        }
+    }
+    if (args.length == 2) {
+        if (args[0].toLowerCase() == config_2.ALL_GUILDS)
+            guildId = config_2.ALL_GUILDS;
+        else if (Object.keys(config_2.guilds).indexOf(args[0].toLowerCase()) >= 0) {
+            guildId = config_2.guilds[args[0]];
+        }
+        limit = Number(args[1]);
+    }
+    let hasMore = true;
+    let results = [];
+    let processCallback = function (data) {
+        hasMore = data.length >= limit;
+        offset += limit;
+        let dateFormatOpts = {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        };
+        let cnt = results.length + 1;
+        for (let i = 0; i < data.length; i++) {
+            if (guildId != config_2.ALL_GUILDS)
+                if (data[i].Attacker.Id != guildId && data[i].Defender.Id != guildId)
+                    continue;
+            let dateOfGvg = new Date(Date.parse(data[i].StartTime));
+            //dateOfGvg.setHours(localUtcOffset + dateOfGvg.getHours())
+            let today = new Date();
+            let h = dateOfGvg.getHours().toString();
+            let m = dateOfGvg.getMinutes().toString();
+            let atTime = (h.length == 1 ? '0' + h : h) + ':' + (m.length == 1 ? '0' + m : m);
+            let attakerAllianceTag = data[i].Attacker.Alliance ? `[${(data[i].Attacker.Alliance.AllianceTag || data[i].Attacker.Alliance.AllianceName)}]` : '';
+            let defenderAllianceTag = data[i].Defender.Alliance ? `[${(data[i].Defender.Alliance.AllianceTag || data[i].Defender.Alliance.AllianceName)}]` : '';
+            let attaker = `${attakerAllianceTag}${data[i].Attacker.Name}`;
+            let defender = `${defenderAllianceTag}${data[i].Defender.Name}`;
+            if (dateOfGvg.getDate() == today.getDate())
+                results.push(cnt++ + `. Today at ${atTime}    ${attaker} vs ${defender}` + '\r\n');
+            else
+                results.push(cnt++ + `. ${dateOfGvg.toLocaleDateString('ru-RU', dateFormatOpts)} at ${atTime}    ${attaker} vs ${defender}` + '\r\n');
+        }
+        if (hasMore)
+            cycle();
+        else
+            endCycle();
+    };
+    let cycle = function () {
+        albion_1.fetchUpcomingGvGs(limit, offset).then((data) => processCallback(data));
+    };
+    let endCycle = function () {
+        if (results.length == 0)
+            results.push('No upcoming GvG.');
+        callback(results.join(''));
+    };
+    cycle();
+}
+function processPing(callback) {
+    callback('Pong!');
+}
 
 
 /***/ }),

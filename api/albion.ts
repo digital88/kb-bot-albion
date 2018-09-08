@@ -75,17 +75,20 @@ function buildQueryString(endpoint: string, params?: IQueryParams) {
 }
 
 function fetchInfo(endpoint: string, params?: IQueryParams) {
-    let req = new xhr.XMLHttpRequest()
-    req.onreadystatechange = function () {
-        logger.info("State: " + this.readyState)
-        if (this.readyState === 4) { //todo: change number to const
-            logger.info('fetched data from ep: ' + endpoint)
-            let obj = JSON.parse(this.responseText)
+    return new Promise(function (resolve, reject) {
+        let req = new xhr.XMLHttpRequest()
+        req.onreadystatechange = function () {
+            logger.info("State: " + this.readyState)
+            if (this.readyState === this.DONE) {
+                logger.info('fetched data from ep: ' + endpoint)
+                let obj = JSON.parse(this.responseText)
+                resolve(obj)
+            }
         }
-    }
-    let url = buildQueryString(endpoint, params)
-    req.open('GET', url)
-    req.send()
+        let url = buildQueryString(endpoint, params)
+        req.open('GET', url)
+        req.send()
+    })
 }
 
 export function fetchBattles() {
@@ -96,6 +99,22 @@ export function fetchEvents() {
     fetchInfo(endpoints.events())
 }
 
-export function fetchEvent(eventId: number | string) {
+export function fetchEvent(eventId: entityId) {
     fetchInfo(endpoints.eventById(eventId))
+}
+
+export function fetchUpcomingGvGs(limit?: number, offset?: number) {
+    let params: IQueryParams = {
+        limit: limit ? limit : 1,
+        offset: offset
+    }
+    return fetchInfo(endpoints.upcomingGvGs(), params)
+}
+
+export function fetchPrevGvGs(guildId: entityId, limit?: number, offset?: number) {
+    let params: IQueryParams = {
+        limit: limit ? limit : 1,
+        offset: offset ? offset : 0
+    }
+    return fetchInfo(endpoints.guildGvGs(guildId), params)
 }
