@@ -24,11 +24,14 @@ if (token) {
             args = args.splice(1)
             if (isKnownCommand(cmd))
                 bot.simulateTyping(channelID)
-            processCommand(cmd, function (message: string) {
-                bot.sendMessage({
+            processCommand(cmd, function (message: string, embed?: {}, file?: any) {
+                let msg: any = {
                     to: channelID,
-                    message: message
-                })
+                    message: message,
+                    embed: embed,
+                    file: file,
+                }
+                bot.sendMessage(msg)
             }, ...args)
         }
     })

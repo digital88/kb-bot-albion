@@ -1,3 +1,5 @@
+import * as i from './event'
+
 interface IGuildData {
     guild: IGuildInfo,
     overall: IOverallInfo,
@@ -68,13 +70,13 @@ interface IGuildMemberInfo {
     AvatarRing: string,
     AverageItemPower: number,
     DeathFame: number,
-    Equipment: IEquipmentInfo,
+    Equipment: i.IEquipmentInfo,
     FameRatio: number,
     GuildId: string,
     GuildName: string,
     Id: string,
-    Inventory: IItemInfo[],
+    Inventory: i.IItemInfo[],
     KillFame: number,
-    LifetimeStatistics: ILifetimeStatisticsInfo,
+    LifetimeStatistics: i.ILifetimeStatisticsInfo,
     Name: string,
 }

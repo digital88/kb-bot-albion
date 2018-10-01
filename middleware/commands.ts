@@ -1,7 +1,9 @@
 
-import { fetchBattles, fetchEvents, fetchEvent, fetchUpcomingGvGs } from '../api/albion'
+import { fetchUpcomingGvGs, fetchEvents, getItemImage } from '../api/albion'
 import { guilds, ALL_GUILDS } from '../config'
+import g from '../config'
 import * as gvg from '../interface/gvgs'
+import * as ev from '../interface/event'
 
 const currUtcOffset = new Date().getTimezoneOffset()
 const targetUtcOffset = -180 // +03:00 Moscow time
@@ -9,13 +11,14 @@ const targetUtcOffset = -180 // +03:00 Moscow time
 const knownCommands = [
     'ping',
     'gvg',
+    //'kills'
 ]
 
 export function isKnownCommand(command: string) {
     return knownCommands.indexOf(command) >= 0
 }
 
-export function processCommand(command: string, callback: (msg: string) => void, ...args: string[]) {
+export function processCommand(command: string, callback: (msg: string, embed?: {}, file?: any) => void, ...args: string[]) {
     switch (command) {
         case 'ping': {
             processPing(callback)
@@ -25,8 +28,44 @@ export function processCommand(command: string, callback: (msg: string) => void,
             processGvg(callback, ...args)
             break
         }
+        case 'kills': {
+            processKills(callback, ...args)
+        }
         default: break
     }
+}
+
+function processKills(callback: (msg: string, embed?: {}, file?: any) => void, ...args: string[]) {
+    let limit = 49
+    let offset = 0
+    let hasMore = true
+    let messages: string[] = []
+    let processCallback = function (data: ev.IEventInfo[]) {
+        data = data.sort((a, b) => a.BattleId - b.BattleId)
+        hasMore = data.length >= limit
+        offset += limit
+        data.forEach((i) => {
+            let date = new Date(Date.parse(i.TimeStamp))
+            let { atTime } = toDateAndTimeStr(date)
+            let victimAlliance = i.Victim.AllianceName ? `[${i.Victim.AllianceName}]` : ''
+            messages.push(`${atTime} ${i.Killer.Name} killed ${i.Victim.Name} (${victimAlliance}${i.Victim.GuildName}) for ${i.TotalVictimKillFame} fame`)
+            getItemImage(i.Killer.Equipment.MainHand.Type, i.Killer.Equipment.MainHand.Quality, i.Killer.Equipment.MainHand.Count).then((data: any) => {
+                callback(data)
+            })
+            if (messages.length >= 10) {
+                callback(messages.join('\r\n'))
+                messages = []
+            }
+        })
+        /*if (hasMore)
+            fetchEvents(g.guildId, limit, offset).then(processCallback)
+        else*/
+        if (messages.length >= 10) {
+            callback(messages.join('\r\n'))
+            messages = []
+        }
+    }
+    fetchEvents(g.guildId, limit, offset).then(processCallback)
 }
 
 function processGvg(callback: (msg: string) => void, ...args: string[]) {
@@ -61,16 +100,29 @@ function processGvg(callback: (msg: string) => void, ...args: string[]) {
             let attaker = `${attakerAllianceTag}${data[i].Attacker.Name}`
             let defender = `${defenderAllianceTag}${data[i].Defender.Name}`
             if (dateOfGvg.getDate() == today.getDate())
-                results.push(cnt++ + `. Today at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n')
+                results.push(cnt++ + `. Today at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*`)
             else
-                results.push(cnt++ + `. ${atDate} at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n')
+                results.push(cnt++ + `. ${atDate} at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*`)
         }
         if (hasMore)
             fetchUpcomingGvGs(limit, offset).then((data: gvg.IGvGsInfo) => processCallback(data))
         else {
             if (results.length == 0)
                 results.push('No upcoming GvG.')
-            callback(results.join(''))
+            let buff = ""
+            results.forEach((res, index, arr) => {
+                buff += res + '\r\n'
+                if (index > 0) {
+                    if (index % 15 == 0 || index == arr.length - 1) {
+                        callback(buff)
+                        buff = ""
+                        let sleep = 0
+                        while (sleep < 3000) {
+                            sleep += 1
+                        }
+                    }
+                }
+            })
         }
     }
     fetchUpcomingGvGs(limit, offset).then((data: gvg.IGvGsInfo) => processCallback(data))

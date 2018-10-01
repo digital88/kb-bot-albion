@@ -41,6 +41,7 @@ const endpoints = {
     weaponCategories: () => '/items/_weaponCategories',
     allianceById: (allianceId: entityId) => `/alliances/${allianceId}`,
     allianceTopKills: (allianceId: entityId) => `/alliances/${allianceId}/topKills`,
+    itemPics: (type: entityId) => `/items/${type}.png`
 }
 
 interface IQueryParams {
@@ -54,6 +55,9 @@ interface IQueryParams {
     region?: 'Total',
     guildId?: string,
     allianceId?: string,
+
+    Quality?: number,
+    Count?: number,
 }
 
 function buildQueryString(endpoint: string, params?: IQueryParams) {
@@ -74,6 +78,14 @@ function buildQueryString(endpoint: string, params?: IQueryParams) {
     return result
 }
 
+export function getItemImage(type: string, Quality, Count: number) {
+    let params: IQueryParams = {
+        Quality,
+        Count,
+    }
+    return fetchInfo(endpoints.itemPics(type), params)
+}
+
 function fetchInfo(endpoint: string, params?: IQueryParams) {
     return new Promise(function (resolve, reject) {
         let req = new xhr.XMLHttpRequest()
@@ -92,15 +104,20 @@ function fetchInfo(endpoint: string, params?: IQueryParams) {
 }
 
 export function fetchBattles() {
-    fetchInfo(endpoints.battles())
+    return fetchInfo(endpoints.battles())
 }
 
-export function fetchEvents() {
-    fetchInfo(endpoints.events())
+export function fetchEvents(guildId: entityId, limit: number, offset: number) {
+    let params: IQueryParams = {
+        guildId: guildId as string,
+        limit: limit,
+        offset: offset
+    }
+    return fetchInfo(endpoints.events(), params)
 }
 
 export function fetchEvent(eventId: entityId) {
-    fetchInfo(endpoints.eventById(eventId))
+    return fetchInfo(endpoints.eventById(eventId))
 }
 
 export function fetchUpcomingGvGs(limit: number, offset: number) {

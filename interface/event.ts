@@ -1,4 +1,6 @@
-interface IGuildFameEventInfo {
+export type utcDateString = string
+
+export interface IGuildFameEventInfo {
     Id: string,
     Name: string,
     AllianceId: string,
@@ -7,7 +9,7 @@ interface IGuildFameEventInfo {
     DeathFame: number
 }
 
-interface IPlayerWeaponRankInfo {
+export interface IPlayerWeaponRankInfo {
     Id: string,
     PlayerName: string,
     PlayerId: string,
@@ -21,7 +23,7 @@ interface IPlayerWeaponRankInfo {
     Fame: number
 }
 
-interface IEventInfo {
+export interface IEventInfo {
     BattleId: number,
     EventId: number,
     groupMemberCount: number,
@@ -31,14 +33,14 @@ interface IEventInfo {
     Location: string,
     numberOfParticipants: number,
     Participants: IParticipantInfo[],
-    TimeStamp: Date,
+    TimeStamp: utcDateString,
     TotalVictimKillFame: number,
     Type: string,
     Version: number,
     Victim: IVictimInfo
 }
 
-interface IGVGMatchInfo {
+export interface IGVGMatchInfo {
     MatchId: string,
     KillerTeam: string,
     VictimTeam: string,
@@ -46,7 +48,7 @@ interface IGVGMatchInfo {
     DefenderTickets: number
 }
 
-interface IVictimInfo {
+export interface IVictimInfo {
     AllianceId: string,
     AllianceName: string,
     AllianceTag: string,
@@ -65,7 +67,7 @@ interface IVictimInfo {
     Name: string,
 }
 
-interface IParticipantInfo {
+export interface IParticipantInfo {
     AllianceId: string,
     AllianceName: string,
     AllianceTag: string,
@@ -86,7 +88,7 @@ interface IParticipantInfo {
     SupportHealingDone: number,
 }
 
-interface IKillerInfo {
+export interface IKillerInfo {
     AllianceId: string,
     AllianceName: string,
     AllianceTag: string,
@@ -105,7 +107,7 @@ interface IKillerInfo {
     Name: string
 }
 
-interface IGroupMemberInfo {
+export interface IGroupMemberInfo {
     AllianceId: string,
     AllianceName: string,
     AllianceTag: string,
@@ -124,7 +126,7 @@ interface IGroupMemberInfo {
     Name: string
 }
 
-interface IEquipmentInfo {
+export interface IEquipmentInfo {
     Armor: IItemInfo,
     Bag: IItemInfo,
     Cape: IItemInfo,
@@ -137,7 +139,7 @@ interface IEquipmentInfo {
     Shoes: IItemInfo,
 }
 
-interface IItemInfo {
+export interface IItemInfo {
     Type: string,
     Count: number,
     Quality: number,
@@ -145,7 +147,7 @@ interface IItemInfo {
     PassiveSpells: string[]
 }
 
-interface ILifetimeStatisticsInfo {
+export interface ILifetimeStatisticsInfo {
     PvE: {
         Total: number,
         Royal: number,
@@ -189,5 +191,5 @@ interface ILifetimeStatisticsInfo {
         Royal: number,
         Outlands: number
     },
-    Timestamp: Date
+    Timestamp: utcDateString
 }

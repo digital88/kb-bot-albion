@@ -135,6 +135,7 @@ const endpoints = {
     weaponCategories: () => '/items/_weaponCategories',
     allianceById: (allianceId) => `/alliances/${allianceId}`,
     allianceTopKills: (allianceId) => `/alliances/${allianceId}/topKills`,
+    itemPics: (type) => `/items/${type}.png`
 };
 function buildQueryString(endpoint, params) {
     let result = apiUrl + endpoint;
@@ -153,6 +154,14 @@ function buildQueryString(endpoint, params) {
     }
     return result;
 }
+function getItemImage(type, Quality, Count) {
+    let params = {
+        Quality,
+        Count,
+    };
+    return fetchInfo(endpoints.itemPics(type), params);
+}
+exports.getItemImage = getItemImage;
 function fetchInfo(endpoint, params) {
     return new Promise(function (resolve, reject) {
         let req = new xhr.XMLHttpRequest();
@@ -170,15 +179,20 @@ function fetchInfo(endpoint, params) {
     });
 }
 function fetchBattles() {
-    fetchInfo(endpoints.battles());
+    return fetchInfo(endpoints.battles());
 }
 exports.fetchBattles = fetchBattles;
-function fetchEvents() {
-    fetchInfo(endpoints.events());
+function fetchEvents(guildId, limit, offset) {
+    let params = {
+        guildId: guildId,
+        limit: limit,
+        offset: offset
+    };
+    return fetchInfo(endpoints.events(), params);
 }
 exports.fetchEvents = fetchEvents;
 function fetchEvent(eventId) {
-    fetchInfo(endpoints.eventById(eventId));
+    return fetchInfo(endpoints.eventById(eventId));
 }
 exports.fetchEvent = fetchEvent;
 function fetchUpcomingGvGs(limit, offset) {
@@ -214,8 +228,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __webpack_require__(/*! fs */ "fs");
 const logger_1 = __webpack_require__(/*! ./log/logger */ "./log/logger.ts");
 /** Reads file named 'token' in current folder and extracts it's contents as string.
-*   File must be ANSI encoded or bot will not connect with resulting string as token.
-*   This maybe is related to how node works with strings and encodings.
+*   File must be ANSI encoded or bot will not connect with resulting string as token
+*   (this maybe is related to how Node.js works with strings and encodings).
 *   Returns empty string on error.
 */
 function readToken() {
@@ -289,11 +303,14 @@ if (token) {
             args = args.splice(1);
             if (commands_1.isKnownCommand(cmd))
                 bot.simulateTyping(channelID);
-            commands_1.processCommand(cmd, function (message) {
-                bot.sendMessage({
+            commands_1.processCommand(cmd, function (message, embed, file) {
+                let msg = {
                     to: channelID,
-                    message: message
-                });
+                    message: message,
+                    embed: embed,
+                    file: file,
+                };
+                bot.sendMessage(msg);
             }, ...args);
         }
     });
@@ -340,6 +357,7 @@ exports.logger = winston.createLogger({
 Object.defineProperty(exports, "__esModule", { value: true });
 const albion_1 = __webpack_require__(/*! ../api/albion */ "./api/albion.ts");
 const config_1 = __webpack_require__(/*! ../config */ "./config.ts");
+const config_2 = __webpack_require__(/*! ../config */ "./config.ts");
 const currUtcOffset = new Date().getTimezoneOffset();
 const targetUtcOffset = -180; // +03:00 Moscow time
 const knownCommands = [
@@ -360,10 +378,45 @@ function processCommand(command, callback, ...args) {
             processGvg(callback, ...args);
             break;
         }
+        case 'kills': {
+            processKills(callback, ...args);
+        }
         default: break;
     }
 }
 exports.processCommand = processCommand;
+function processKills(callback, ...args) {
+    let limit = 49;
+    let offset = 0;
+    let hasMore = true;
+    let messages = [];
+    let processCallback = function (data) {
+        data = data.sort((a, b) => a.BattleId - b.BattleId);
+        hasMore = data.length >= limit;
+        offset += limit;
+        data.forEach((i) => {
+            let date = new Date(Date.parse(i.TimeStamp));
+            let { atTime } = toDateAndTimeStr(date);
+            let victimAlliance = i.Victim.AllianceName ? `[${i.Victim.AllianceName}]` : '';
+            messages.push(`${atTime} ${i.Killer.Name} killed ${i.Victim.Name} (${victimAlliance}${i.Victim.GuildName}) for ${i.TotalVictimKillFame} fame`);
+            albion_1.getItemImage(i.Killer.Equipment.MainHand.Type, i.Killer.Equipment.MainHand.Quality, i.Killer.Equipment.MainHand.Count).then((data) => {
+                callback(data);
+            });
+            if (messages.length >= 10) {
+                callback(messages.join('\r\n'));
+                messages = [];
+            }
+        });
+        /*if (hasMore)
+            fetchEvents(g.guildId, limit, offset).then(processCallback)
+        else*/
+        if (messages.length >= 10) {
+            callback(messages.join('\r\n'));
+            messages = [];
+        }
+    };
+    albion_1.fetchEvents(config_2.default.guildId, limit, offset).then(processCallback);
+}
 function processGvg(callback, ...args) {
     let limit = 10;
     let offset = 0;
@@ -396,16 +449,29 @@ function processGvg(callback, ...args) {
             let attaker = `${attakerAllianceTag}${data[i].Attacker.Name}`;
             let defender = `${defenderAllianceTag}${data[i].Defender.Name}`;
             if (dateOfGvg.getDate() == today.getDate())
-                results.push(cnt++ + `. Today at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n');
+                results.push(cnt++ + `. Today at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*`);
             else
-                results.push(cnt++ + `. ${atDate} at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*` + '\r\n');
+                results.push(cnt++ + `. ${atDate} at ${atTime} **${attaker} vs ${defender}** *${data[i].AttackerTerritory.ClusterName} --> ${data[i].DefenderTerritory.ClusterName}*`);
         }
         if (hasMore)
             albion_1.fetchUpcomingGvGs(limit, offset).then((data) => processCallback(data));
         else {
             if (results.length == 0)
                 results.push('No upcoming GvG.');
-            callback(results.join(''));
+            let buff = "";
+            results.forEach((res, index, arr) => {
+                buff += res + '\r\n';
+                if (index > 0) {
+                    if (index % 15 == 0 || index == arr.length - 1) {
+                        callback(buff);
+                        buff = "";
+                        let sleep = 0;
+                        while (sleep < 3000) {
+                            sleep += 1;
+                        }
+                    }
+                }
+            });
         }
     };
     albion_1.fetchUpcomingGvGs(limit, offset).then((data) => processCallback(data));
